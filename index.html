@@ -38,16 +38,35 @@
         <canvas id="gameCanvas" width="900" height="560"></canvas>
 
         <section class="game-hud" aria-label="게임 정보">
-          <div class="hud-top-left">WAVE <span id="waveText">1-1</span></div>
-          <div class="hud-top-center"><span id="timeText">20</span>s</div>
-          <div class="hud-top-right">SCORE <span id="scoreText">0</span></div>
-          <div class="hud-bottom-left">HP <span id="hpText">♥♥♥</span> <span class="hud-divider">|</span> PILLOW <span id="pillowText">3/3</span></div>
-          <span id="difficultyText" class="visually-hidden">1단계</span><span id="finalWaveText" class="visually-hidden">∞</span>
-          <div class="hud-objective">
-            <strong>목적</strong> 악몽에서 벗어나기<br />
-            <strong>목표</strong> 별의 조각 <span id="starText">0/3</span>개를 모아 꿈의 균열 열기
+          <div class="hud-top-left">
+            <div>HP <span id="hpText">♥♥♥</span></div>
+            <div>PILLOW <span id="pillowText">3/3</span></div>
           </div>
+
+          <div class="hud-left-middle">
+            <div>WAVE <span id="waveText">1-1</span></div>
+            <div class="hud-time"><span id="timeText">20</span>s</div>
+          </div>
+
+          <div class="hud-top-right">
+            <div>STAR <span id="starText">0/3</span></div>
+            <div>SCORE <span id="scoreText">0</span></div>
+          </div>
+
+          <span id="difficultyText" class="visually-hidden">1단계</span>
+          <span id="finalWaveText" class="visually-hidden">∞</span>
         </section>
+
+        <div id="touchJoystick" class="touch-joystick" aria-label="모바일 이동 조이스틱">
+          <div class="joystick-ring">
+            <span class="joy-arrow joy-up">▲</span>
+            <span class="joy-arrow joy-right">▶</span>
+            <span class="joy-arrow joy-down">▼</span>
+            <span class="joy-arrow joy-left">◀</span>
+            <div id="joystickKnob" class="joystick-knob"></div>
+          </div>
+        </div>
+
 
         <div id="startPanel" class="panel lobby-panel">
           <p class="lobby-kicker">MODE SELECTED</p>

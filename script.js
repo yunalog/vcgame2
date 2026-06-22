@@ -1,5 +1,8 @@
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
+const gameScreen = document.querySelector('.game-screen');
+const touchJoystick = document.getElementById('touchJoystick');
+const joystickKnob = document.getElementById('joystickKnob');
 
 const hpText = document.getElementById('hpText');
 const waveText = document.getElementById('waveText');
@@ -91,6 +94,17 @@ let collectedStars = 0;
 let spawnedStarsThisWave = 0;
 let pillows = [];
 const mouse = { x: canvas.width / 2, y: canvas.height / 2, inside: false };
+const touchMove = {
+  active: false,
+  pointerId: null,
+  startX: 0,
+  startY: 0,
+  dx: 0,
+  dy: 0,
+  lastDirX: 0,
+  lastDirY: -1,
+  maxDistance: 38,
+};
 
 const upgrades = [
   {
@@ -662,10 +676,17 @@ function updatePlayer(dt) {
   if (keys.ArrowUp || keys.w || keys.W) dy -= 1;
   if (keys.ArrowDown || keys.s || keys.S) dy += 1;
 
+  if (touchMove.active) {
+    dx += touchMove.dx;
+    dy += touchMove.dy;
+  }
+
   if (dx !== 0 || dy !== 0) {
     const length = Math.hypot(dx, dy);
     dx /= length;
     dy /= length;
+    touchMove.lastDirX = dx;
+    touchMove.lastDirY = dy;
   }
 
   player.x += dx * player.speed * dt;
@@ -752,11 +773,17 @@ function updateStars(dt) {
   });
 }
 
-function throwPillow() {
+function throwPillow(directionX = null, directionY = null) {
   if (gameState !== 'playing') return;
   if (player.pillows <= 0 || pillowCooldownTimer > 0) return;
 
-  const angle = Math.atan2(mouse.y - player.y, mouse.x - player.x);
+  let angle;
+  if (typeof directionX === 'number' && typeof directionY === 'number' && Math.hypot(directionX, directionY) > 0.05) {
+    angle = Math.atan2(directionY, directionX);
+  } else {
+    angle = Math.atan2(mouse.y - player.y, mouse.x - player.x);
+  }
+
   pillows.push({
     x: player.x,
     y: player.y,
@@ -1333,6 +1360,92 @@ modeButtons.forEach((button) => {
   });
 });
 
+
+function setTouchDirection(clientX, clientY) {
+  const x = clientX - touchMove.startX;
+  const y = clientY - touchMove.startY;
+  const distance = Math.hypot(x, y);
+  const limitedDistance = Math.min(distance, touchMove.maxDistance);
+  const normalizedX = distance > 0 ? x / distance : 0;
+  const normalizedY = distance > 0 ? y / distance : 0;
+
+  touchMove.dx = normalizedX * (limitedDistance / touchMove.maxDistance);
+  touchMove.dy = normalizedY * (limitedDistance / touchMove.maxDistance);
+
+  if (distance > 4) {
+    touchMove.lastDirX = normalizedX;
+    touchMove.lastDirY = normalizedY;
+  }
+
+  if (joystickKnob) {
+    joystickKnob.style.transform = `translate(calc(-50% + ${normalizedX * limitedDistance}px), calc(-50% + ${normalizedY * limitedDistance}px))`;
+  }
+}
+
+function resetTouchDirection() {
+  touchMove.active = false;
+  touchMove.pointerId = null;
+  touchMove.dx = 0;
+  touchMove.dy = 0;
+  if (joystickKnob) joystickKnob.style.transform = 'translate(-50%, -50%)';
+}
+
+function getCanvasPointFromEvent(event) {
+  const rect = canvas.getBoundingClientRect();
+  const scaleX = canvas.width / rect.width;
+  const scaleY = canvas.height / rect.height;
+  return {
+    x: (event.clientX - rect.left) * scaleX,
+    y: (event.clientY - rect.top) * scaleY,
+  };
+}
+
+function isGameplayTouchTarget(target) {
+  return !target.closest('.touch-joystick, .panel, button, input, .mode-select, .sound-control');
+}
+
+if (touchJoystick) {
+  touchJoystick.addEventListener('pointerdown', (event) => {
+    event.preventDefault();
+    touchMove.active = true;
+    touchMove.pointerId = event.pointerId;
+    touchMove.startX = event.clientX;
+    touchMove.startY = event.clientY;
+    touchJoystick.setPointerCapture(event.pointerId);
+    setTouchDirection(event.clientX, event.clientY);
+  });
+
+  touchJoystick.addEventListener('pointermove', (event) => {
+    if (!touchMove.active || touchMove.pointerId !== event.pointerId) return;
+    event.preventDefault();
+    setTouchDirection(event.clientX, event.clientY);
+  });
+
+  touchJoystick.addEventListener('pointerup', (event) => {
+    if (touchMove.pointerId !== event.pointerId) return;
+    event.preventDefault();
+    resetTouchDirection();
+  });
+
+  touchJoystick.addEventListener('pointercancel', (event) => {
+    if (touchMove.pointerId !== event.pointerId) return;
+    resetTouchDirection();
+  });
+}
+
+if (gameScreen) {
+  gameScreen.addEventListener('pointerdown', (event) => {
+    if (event.pointerType !== 'touch') return;
+    if (!isGameplayTouchTarget(event.target)) return;
+    event.preventDefault();
+
+    const point = getCanvasPointFromEvent(event);
+    mouse.x = point.x;
+    mouse.y = point.y;
+
+    throwPillow(touchMove.lastDirX, touchMove.lastDirY);
+  });
+}
 
 canvas.addEventListener('mousemove', (event) => {
   const rect = canvas.getBoundingClientRect();

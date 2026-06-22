@@ -41,6 +41,9 @@ const STAR_SPAWN_INTERVAL = 3.2;
 const INFINITE_STAR_SPAWN_INTERVAL = 2.5;
 const PILLOW_BASE_MAX = 3;
 const PILLOW_BASE_COOLDOWN = 0.45;
+const STAR_EAT_IMAGE_TIME = 0.36;
+const PLAYER_IMAGE_MAX_WIDTH = 58;
+const PLAYER_IMAGE_MAX_HEIGHT = 58;
 
 let gameState = 'ready';
 let lastTime = 0;
@@ -58,6 +61,26 @@ let currentRunEndWave = null;
 let currentRunIsInfinite = true;
 let currentRunLabel = '무한모드';
 
+const imageSources = {
+  background: 'images/BG.png',
+  basic: 'images/basic.png',
+  eatStar: 'images/eatstar.png',
+  sleep: 'images/sleep.png',
+};
+
+const gameImages = Object.entries(imageSources).reduce((images, [name, src]) => {
+  const image = new Image();
+  image.onload = () => {
+    if (gameState !== 'playing') draw();
+  };
+  image.onerror = () => {
+    image.failed = true;
+  };
+  image.src = src;
+  images[name] = image;
+  return images;
+}, {});
+
 const player = {
   x: canvas.width / 2,
   y: canvas.height - 80,
@@ -67,6 +90,7 @@ const player = {
   speed: 260,
   invincible: 0,
   sleepText: 0,
+  eatStar: 0,
   pillows: PILLOW_BASE_MAX,
   maxPillows: PILLOW_BASE_MAX,
   pillowCooldown: PILLOW_BASE_COOLDOWN,
@@ -312,6 +336,7 @@ function resetGame(startWave = selectedMode.startWave, endWave = selectedMode.en
   player.invincible = 0;
   player.invincibleBonus = 0;
   player.sleepText = 0;
+  player.eatStar = 0;
   player.pillows = PILLOW_BASE_MAX;
   player.maxPillows = PILLOW_BASE_MAX;
   player.pillowCooldown = PILLOW_BASE_COOLDOWN;
@@ -361,6 +386,7 @@ function setWaveStats() {
   floatingTexts = [];
   pillowCooldownTimer = 0;
   player.pillows = player.maxPillows;
+  player.eatStar = 0;
   spawnStar();
 }
 
@@ -651,6 +677,7 @@ function update(dt) {
 
   if (player.invincible > 0) player.invincible -= dt;
   if (player.sleepText > 0) player.sleepText -= dt;
+  if (player.eatStar > 0) player.eatStar -= dt;
   if (pillowCooldownTimer > 0) pillowCooldownTimer -= dt;
 
   if (waveTimer <= 0) {
@@ -865,6 +892,7 @@ function checkStarCollisions() {
     const distance = Math.hypot(player.x - star.x, player.y - star.y);
     if (distance < player.radius + star.radius) {
       collectedStars += 1;
+      player.eatStar = STAR_EAT_IMAGE_TIME;
       stars = stars.filter((item) => item !== star);
       playStarSound();
 
@@ -943,6 +971,14 @@ function draw() {
 }
 
 function drawArena() {
+  if (drawCoverImage(gameImages.background, 0, 0, canvas.width, canvas.height)) {
+    if (isBossWave()) {
+      ctx.fillStyle = 'rgba(192, 75, 127, 0.16)';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+    }
+    return;
+  }
+
   const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
   gradient.addColorStop(0, '#2a1238');
   gradient.addColorStop(0.55, '#1a1028');
@@ -972,6 +1008,43 @@ function drawArena() {
 function drawPixelRect(x, y, w, h, color) {
   ctx.fillStyle = color;
   ctx.fillRect(Math.round(x), Math.round(y), w, h);
+}
+
+function isImageReady(image) {
+  return image && !image.failed && image.complete && image.naturalWidth > 0;
+}
+
+function drawCoverImage(image, x, y, width, height) {
+  if (!isImageReady(image)) return false;
+
+  const imageRatio = image.naturalWidth / image.naturalHeight;
+  const targetRatio = width / height;
+  let sourceWidth = image.naturalWidth;
+  let sourceHeight = image.naturalHeight;
+  let sourceX = 0;
+  let sourceY = 0;
+
+  if (imageRatio > targetRatio) {
+    sourceWidth = image.naturalHeight * targetRatio;
+    sourceX = (image.naturalWidth - sourceWidth) / 2;
+  } else {
+    sourceHeight = image.naturalWidth / targetRatio;
+    sourceY = (image.naturalHeight - sourceHeight) / 2;
+  }
+
+  ctx.drawImage(image, sourceX, sourceY, sourceWidth, sourceHeight, x, y, width, height);
+  return true;
+}
+
+function drawContainedImage(image, centerX, centerY, maxWidth, maxHeight) {
+  if (!isImageReady(image)) return false;
+
+  const scale = Math.min(maxWidth / image.naturalWidth, maxHeight / image.naturalHeight);
+  const width = image.naturalWidth * scale;
+  const height = image.naturalHeight * scale;
+
+  ctx.drawImage(image, centerX - width / 2, centerY - height / 2, width, height);
+  return true;
 }
 
 function drawBoss() {
@@ -1057,6 +1130,25 @@ function drawPlayer() {
   const x = Math.round(player.x);
   const y = Math.round(player.y);
   const s = 0.65;
+  const playerImage = player.sleepText > 0
+    ? gameImages.sleep
+    : player.eatStar > 0
+      ? gameImages.eatStar
+      : gameImages.basic;
+
+  if (isImageReady(playerImage)) {
+    ctx.fillStyle = 'rgba(0,0,0,0.35)';
+    ctx.fillRect(x - 18, y + 21, 36, 7);
+    drawContainedImage(playerImage, x, y, PLAYER_IMAGE_MAX_WIDTH, PLAYER_IMAGE_MAX_HEIGHT);
+
+    if (player.sleepText > 0) {
+      ctx.font = 'bold 12px monospace';
+      ctx.fillStyle = '#ffcc66';
+      ctx.textAlign = 'center';
+      ctx.fillText('Zzz', x, y - 28);
+    }
+    return;
+  }
 
   // shadow
   ctx.fillStyle = 'rgba(0,0,0,0.35)';

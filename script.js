@@ -73,6 +73,12 @@ const imageSources = {
   eatStar: 'images/eatstar.png',
   sleep: 'images/sleep.png',
   star: 'images/star.png',
+  bulletBasic: 'images/tan1.png',
+  bulletFirework: 'images/tan2.png',
+  laserActive: 'images/laser1.png',
+  laserWarning: 'images/laser2.png',
+  dangerActive: 'images/circle1.png',
+  dangerWarning: 'images/circle2.png',
   bossCloud: 'images/cloud.png',
   bossMoon: 'images/moon.png',
   bossOwl: 'images/owl.png',
@@ -1107,6 +1113,17 @@ function drawContainedImage(image, centerX, centerY, maxWidth, maxHeight) {
   return true;
 }
 
+function drawBeamImage(image, centerX, centerY, length, thickness, rotation = 0) {
+  if (!isImageReady(image)) return false;
+
+  ctx.save();
+  ctx.translate(centerX, centerY);
+  ctx.rotate(rotation);
+  drawCoverImage(image, -length / 2, -thickness / 2, length, thickness);
+  ctx.restore();
+  return true;
+}
+
 function getBossImage(stage) {
   const bossImages = [
     gameImages.bossCloud,
@@ -1264,6 +1281,17 @@ function drawPlayer() {
 
 function drawBullets() {
   bullets.forEach((bullet) => {
+    const bulletImage = bullet.splitTime ? gameImages.bulletFirework : gameImages.bulletBasic;
+    if (isImageReady(bulletImage)) {
+      const size = bullet.radius * (bullet.splitTime ? 2.9 : 2.7);
+      ctx.save();
+      ctx.translate(bullet.x, bullet.y);
+      ctx.rotate(Math.atan2(bullet.vy, bullet.vx) + performance.now() / 260);
+      ctx.drawImage(bulletImage, -size / 2, -size / 2, size, size);
+      ctx.restore();
+      return;
+    }
+
     ctx.beginPath();
     ctx.arc(bullet.x, bullet.y, bullet.radius, 0, Math.PI * 2);
     ctx.fillStyle = bullet.color || '#ffd166';
@@ -1335,6 +1363,11 @@ function drawFloatingTexts() {
 function drawDangerZones() {
   dangerZones.forEach((zone) => {
     const activeZone = zone.warning <= 0 && zone.active > 0;
+    const zoneImage = activeZone ? gameImages.dangerActive : gameImages.dangerWarning;
+    if (drawContainedImage(zoneImage, zone.x, zone.y, zone.radius * 2.8, zone.radius * 2)) {
+      return;
+    }
+
     ctx.beginPath();
     ctx.arc(zone.x, zone.y, zone.radius, 0, Math.PI * 2);
     ctx.fillStyle = activeZone ? 'rgba(255, 90, 0, 0.46)' : 'rgba(255, 40, 40, 0.18)';
@@ -1359,6 +1392,14 @@ function drawDangerZones() {
 function drawLasers() {
   lasers.forEach((laser) => {
     const activeLaser = laser.warning <= 0 && laser.active > 0;
+    const laserImage = activeLaser ? gameImages.laserActive : gameImages.laserWarning;
+    const visualThickness = laser.width * (activeLaser ? 4.6 : 3.6);
+    const drewLaserImage = laser.orientation === 'horizontal'
+      ? drawBeamImage(laserImage, canvas.width / 2, laser.y, canvas.width, visualThickness)
+      : drawBeamImage(laserImage, laser.x, canvas.height / 2, canvas.height, visualThickness, Math.PI / 2);
+
+    if (drewLaserImage) return;
+
     ctx.fillStyle = activeLaser ? 'rgba(255, 20, 20, 0.72)' : 'rgba(255, 255, 255, 0.22)';
 
     if (laser.orientation === 'horizontal') {

@@ -1297,7 +1297,7 @@ function drawBullets() {
       const size = bullet.radius * (isFireworkBullet ? 3.15 : 3.55);
       ctx.save();
       ctx.translate(bullet.x, bullet.y);
-      ctx.rotate(Math.atan2(bullet.vy, bullet.vx));
+      ctx.rotate(Math.atan2(bullet.vy, bullet.vx) + (isFireworkBullet ? 0 : Math.PI));
       ctx.drawImage(bulletImage, -size / 2, -size / 2, size, size);
       ctx.restore();
       return;

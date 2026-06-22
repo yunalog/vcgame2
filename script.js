@@ -1225,6 +1225,16 @@ function drawVampireBoss(x, y) {
   drawPixelRect(x - 56, y + 30, 112, 22, '#7d295d');
 }
 
+function drawSleepText(x, y) {
+  ctx.font = 'bold 12px monospace';
+  ctx.textAlign = 'center';
+  ctx.lineWidth = 4;
+  ctx.strokeStyle = 'rgba(18, 8, 18, 0.92)';
+  ctx.fillStyle = '#ffcc66';
+  ctx.strokeText('Zzz', x, y);
+  ctx.fillText('Zzz', x, y);
+}
+
 function drawPlayer() {
   const blink = player.invincible > 0 && Math.floor(performance.now() / 90) % 2 === 0;
   if (blink) return;
@@ -1244,10 +1254,7 @@ function drawPlayer() {
     drawContainedImage(playerImage, x, y, PLAYER_IMAGE_MAX_WIDTH, PLAYER_IMAGE_MAX_HEIGHT);
 
     if (player.sleepText > 0) {
-      ctx.font = 'bold 12px monospace';
-      ctx.fillStyle = '#ffcc66';
-      ctx.textAlign = 'center';
-      ctx.fillText('Zzz', x, y - 28);
+      drawSleepText(x, y - 28);
     }
     return;
   }
@@ -1282,10 +1289,7 @@ function drawPlayer() {
   drawPixelRect(x + 1 * s, y + 26 * s, 8 * s, 3 * s, '#fff4da');
 
   if (player.sleepText > 0) {
-    ctx.font = 'bold 12px monospace';
-    ctx.fillStyle = '#ffcc66';
-    ctx.textAlign = 'center';
-    ctx.fillText('Zzz', x, y - 23);
+    drawSleepText(x, y - 23);
   }
 }
 

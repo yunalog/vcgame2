@@ -70,6 +70,7 @@ const imageSources = {
   basic: 'images/basic.png',
   eatStar: 'images/eatstar.png',
   sleep: 'images/sleep.png',
+  star: 'images/star.png',
   bossCloud: 'images/cloud.png',
   bossMoon: 'images/moon.png',
   bossOwl: 'images/owl.png',
@@ -1243,6 +1244,14 @@ function drawStars() {
     ctx.save();
     ctx.translate(star.x, star.y);
     ctx.rotate(star.pulse * 0.18);
+
+    if (isImageReady(gameImages.star)) {
+      const size = r * 2.55;
+      ctx.drawImage(gameImages.star, -size / 2, -size / 2, size, size);
+      ctx.restore();
+      return;
+    }
+
     ctx.beginPath();
     for (let i = 0; i < 10; i++) {
       const angle = -Math.PI / 2 + (Math.PI * 2 * i) / 10;

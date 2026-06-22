@@ -394,6 +394,10 @@ canvas {
   letter-spacing: 3px;
 }
 
+.lobby-mode-select {
+  display: none;
+}
+
 .lobby-story {
   max-width: 760px;
 }
@@ -782,6 +786,24 @@ canvas {
 
   .panel h2 {
     font-size: clamp(24px, 8vw, 34px);
+  }
+
+  .lobby-mode-select {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+    width: min(92vw, 520px);
+  }
+
+  .lobby-mode-button {
+    min-height: 48px;
+    padding: 7px 5px;
+    font-size: 12px;
+  }
+
+  .lobby-mode-button span {
+    margin-top: 3px;
+    font-size: 10px;
   }
 
   .panel p,

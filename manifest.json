@@ -5,9 +5,16 @@
   "name": "악몽 탈출 : 별의 조각",
   "orientation": "any",
   "scope": "/",
-  "short_name": "악몽탈",
+  "short_name": "악몽탈출",
   "start_url": "/vcgame2/",
   "theme_color": "#ffffff",
+ "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
   "description": "쏟아지는 탄막을 피하며 별을 모아 악몽 탈출에 도전하세요.",
   "id": "/nightmare-escape"
 }

@@ -23,6 +23,8 @@ const startButton = document.getElementById('startButton');
 const restartButton = document.getElementById('restartButton');
 const progressButton = document.getElementById('progressButton');
 const soundButton = document.getElementById('soundButton');
+const hudSoundButton = document.getElementById('hudSoundButton');
+const soundButtons = [soundButton, hudSoundButton].filter(Boolean);
 const upgradeCards = document.getElementById('upgradeCards');
 const resultTitle = document.getElementById('resultTitle');
 const resultText = document.getElementById('resultText');
@@ -209,94 +211,140 @@ const upgrades = [
 ];
 
 const audio = {
-  ctx: null,
   enabled: true,
-  ambienceTimer: null,
+  initialized: false,
+  unlocked: false,
+  tracks: {},
   volume: 0.7,
+  bgmVolume: 0.3,
+};
+
+const audioSources = {
+  bgm: 'sounds/bgm.mp3',
+  start: 'sounds/start.mp3',
+  star: 'sounds/star.mp3',
+  upgrade: 'sounds/upgrade.mp3',
+  clear: 'sounds/clear.mp3',
+  nextLevel: 'sounds/next level.mp3',
+  fail: 'sounds/fail.mp3',
+  over: 'sounds/over.mp3',
+};
+
+const soundVolumes = {
+  bgm: audio.bgmVolume,
+  start: 0.85,
+  star: 0.9,
+  upgrade: 0.85,
+  clear: 0.85,
+  nextLevel: 0.85,
+  fail: 0.85,
+  over: 0.9,
 };
 
 function initAudio() {
-  if (audio.ctx) return;
-  audio.ctx = new (window.AudioContext || window.webkitAudioContext)();
+  if (audio.initialized) return;
+
+  Object.entries(audioSources).forEach(([name, src]) => {
+    const track = new Audio(src);
+    track.preload = 'auto';
+    track.loop = name === 'bgm';
+    track.volume = getSoundVolume(name);
+    audio.tracks[name] = track;
+  });
+
+  audio.initialized = true;
 }
 
 function resumeAudio() {
   initAudio();
-  if (audio.ctx.state === 'suspended') audio.ctx.resume();
+  audio.unlocked = true;
 }
 
 function setSoundButtonText() {
-  soundButton.textContent = audio.enabled ? 'SOUND ON' : 'SOUND OFF';
-}
-
-function playTone({ frequency = 440, duration = 0.2, type = 'square', volume = 0.08, slideTo = null }) {
-  if (!audio.enabled) return;
-  resumeAudio();
-
-  const now = audio.ctx.currentTime;
-  const oscillator = audio.ctx.createOscillator();
-  const gain = audio.ctx.createGain();
-
-  oscillator.type = type;
-  oscillator.frequency.setValueAtTime(frequency, now);
-  if (slideTo) oscillator.frequency.exponentialRampToValueAtTime(slideTo, now + duration);
-
-  gain.gain.setValueAtTime(0.0001, now);
-  gain.gain.exponentialRampToValueAtTime(volume * audio.volume, now + 0.02);
-  gain.gain.exponentialRampToValueAtTime(0.0001, now + duration);
-
-  oscillator.connect(gain);
-  gain.connect(audio.ctx.destination);
-  oscillator.start(now);
-  oscillator.stop(now + duration + 0.03);
-}
-
-function playHitSound() { playTone({ frequency: 150, slideTo: 70, duration: 0.18, type: 'sawtooth', volume: 0.12 }); }
-function playStageClearSound() {
-  playTone({ frequency: 392, duration: 0.1, type: 'square', volume: 0.08 });
-  setTimeout(() => playTone({ frequency: 523, duration: 0.12, type: 'square', volume: 0.08 }), 90);
-  setTimeout(() => playTone({ frequency: 784, duration: 0.18, type: 'square', volume: 0.08 }), 180);
-}
-function playStageFailSound() {
-  playTone({ frequency: 180, slideTo: 90, duration: 0.45, type: 'triangle', volume: 0.12 });
-  setTimeout(() => playTone({ frequency: 100, slideTo: 55, duration: 0.35, type: 'sawtooth', volume: 0.08 }), 130);
-}
-function playHoverSound() { playTone({ frequency: 620, duration: 0.045, type: 'square', volume: 0.035 }); }
-function playSelectSound() { playTone({ frequency: 720, duration: 0.08, type: 'square', volume: 0.06 }); }
-function playSaveSound() {
-  playTone({ frequency: 523, duration: 0.08, type: 'square', volume: 0.06 });
-  setTimeout(() => playTone({ frequency: 659, duration: 0.08, type: 'square', volume: 0.06 }), 80);
-}
-function playStarSound() {
-  playTone({ frequency: 880, duration: 0.07, type: 'square', volume: 0.055 });
-  setTimeout(() => playTone({ frequency: 1175, duration: 0.08, type: 'square', volume: 0.045 }), 60);
-}
-function playPillowSound() { playTone({ frequency: 520, slideTo: 760, duration: 0.09, type: 'triangle', volume: 0.055 }); }
-function playPillowHitSound() { playTone({ frequency: 980, slideTo: 620, duration: 0.08, type: 'square', volume: 0.05 }); }
-function playSpecialWarningSound() {
-  playTone({ frequency: 260, slideTo: 170, duration: 0.2, type: 'square', volume: 0.07 });
-}
-
-function startAmbience() {
-  stopAmbience();
-  if (!audio.enabled) return;
-  resumeAudio();
-
-  audio.ambienceTimer = setInterval(() => {
-    if (gameState === 'playing' || gameState === 'upgrade') {
-      const base = Math.random() > 0.5 ? 196 : 220;
-      playTone({ frequency: base, slideTo: base * 0.72, duration: 0.65, type: 'triangle', volume: 0.025 });
-      setTimeout(() => playTone({ frequency: base / 2, duration: 0.35, type: 'sine', volume: 0.018 }), 220);
+  soundButtons.forEach((button) => {
+    if (button === hudSoundButton) {
+      button.textContent = audio.enabled ? '🔊' : '🔇';
+      button.setAttribute('aria-label', audio.enabled ? '사운드 끄기' : '사운드 켜기');
+    } else {
+      button.textContent = audio.enabled ? 'SOUND ON' : 'SOUND OFF';
     }
-  }, 850);
+  });
 }
 
-function stopAmbience() {
-  if (audio.ambienceTimer) {
-    clearInterval(audio.ambienceTimer);
-    audio.ambienceTimer = null;
-  }
+function getSoundVolume(name) {
+  return (soundVolumes[name] ?? 1) * audio.volume;
 }
+
+function updateAudioVolumes() {
+  initAudio();
+  Object.entries(audio.tracks).forEach(([name, track]) => {
+    track.volume = getSoundVolume(name);
+  });
+}
+
+function resetTrack(track) {
+  track.pause();
+  try {
+    track.currentTime = 0;
+  } catch (error) {}
+}
+
+function playSound(name, { restart = true } = {}) {
+  if (!audio.enabled) return;
+  resumeAudio();
+
+  const track = audio.tracks[name];
+  if (!track) return;
+
+  track.volume = getSoundVolume(name);
+  if (restart) {
+    resetTrack(track);
+  }
+
+  const playPromise = track.play();
+  if (playPromise) playPromise.catch(() => {});
+}
+
+function startBgm() {
+  if (!audio.enabled) return;
+  resumeAudio();
+
+  const bgm = audio.tracks.bgm;
+  if (!bgm) return;
+
+  bgm.volume = getSoundVolume('bgm');
+  const playPromise = bgm.play();
+  if (playPromise) playPromise.catch(() => {});
+}
+
+function stopBgm() {
+  const bgm = audio.tracks.bgm;
+  if (!bgm) return;
+
+  resetTrack(bgm);
+}
+
+function stopAllAudio() {
+  Object.values(audio.tracks).forEach((track) => {
+    resetTrack(track);
+  });
+}
+
+function playStartSound() { playSound('start'); }
+function playHitSound() { playSound('fail'); }
+function playStageClearSound() { playSound('clear'); }
+function playStageFailSound() { playSound('over'); }
+function playStarSound() { playSound('star'); }
+function playUpgradeSound() { playSound('upgrade'); }
+function playNextLevelSound() { playSound('nextLevel'); }
+function playHoverSound() {}
+function playSelectSound() {}
+function playSaveSound() {}
+function playPillowSound() {}
+function playPillowHitSound() {}
+function playSpecialWarningSound() {}
+function startAmbience() { startBgm(); }
+function stopAmbience() { stopBgm(); }
 
 function getStage(targetWave = wave) {
   return Math.min(5, Math.ceil(targetWave / 4));
@@ -402,6 +450,7 @@ function setWaveStats() {
 
 function startGame() {
   resumeAudio();
+  playStartSound();
   resetGame();
   gameState = 'playing';
   startPanel.classList.add('hidden');
@@ -448,13 +497,14 @@ function showUpgradePanel() {
     card.addEventListener('mouseenter', playHoverSound);
     card.addEventListener('focus', playHoverSound);
     card.addEventListener('click', () => {
-      playSelectSound();
+      playUpgradeSound();
       upgrade.apply();
       applyWaveDifficulty();
       updateHud();
       upgradePanel.classList.add('hidden');
       gameState = 'playing';
       lastTime = performance.now();
+      setTimeout(playNextLevelSound, 120);
       animationId = requestAnimationFrame(gameLoop);
     });
     upgradeCards.appendChild(card);
@@ -1655,6 +1705,8 @@ canvas.addEventListener('contextmenu', (event) => event.preventDefault());
 
 window.addEventListener('keydown', (event) => { keys[event.key] = true; });
 window.addEventListener('keyup', (event) => { keys[event.key] = false; });
+window.addEventListener('pointerdown', resumeAudio, { once: true, passive: true });
+window.addEventListener('touchstart', resumeAudio, { once: true, passive: true });
 
 function handleStartClick(event) {
   event.preventDefault();
@@ -1669,17 +1721,27 @@ if (progressButton) {
   });
 }
 
-soundButton.addEventListener('click', () => {
+function toggleSound() {
+  resumeAudio();
   audio.enabled = !audio.enabled;
   setSoundButtonText();
-  if (audio.enabled && (gameState === 'playing' || gameState === 'upgrade')) startAmbience();
-  else stopAmbience();
+
+  if (audio.enabled && (gameState === 'playing' || gameState === 'upgrade')) {
+    startAmbience();
+  } else {
+    stopAllAudio();
+  }
+}
+
+soundButtons.forEach((button) => {
+  button.addEventListener('click', toggleSound);
 });
 
 
 if (volumeSlider) {
   volumeSlider.addEventListener('input', () => {
     audio.volume = Number(volumeSlider.value) / 100;
+    updateAudioVolumes();
   });
 }
 

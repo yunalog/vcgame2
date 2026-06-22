@@ -390,9 +390,13 @@ function isEliteWave(targetWave = wave) {
   return isBossWave(targetWave);
 }
 
-function resetGame(startWave = selectedMode.startWave, endWave = selectedMode.endWave, infinite = selectedMode.infinite) {
+function resetPlayerPosition() {
   player.x = canvas.width / 2;
   player.y = canvas.height - 80;
+}
+
+function resetGame(startWave = selectedMode.startWave, endWave = selectedMode.endWave, infinite = selectedMode.infinite) {
+  resetPlayerPosition();
   player.radius = 7;
   player.hp = 3;
   player.maxHp = 3;
@@ -488,6 +492,7 @@ function nextWave() {
 }
 function applyWaveDifficulty() {
   wave += 1;
+  resetPlayerPosition();
   setWaveStats();
 }
 

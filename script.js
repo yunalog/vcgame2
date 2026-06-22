@@ -663,14 +663,17 @@ function spawnFireworkAttack(multiplier = 1) {
   const count = Math.max(1, Math.floor(baseCount * multiplier));
 
   for (let i = 0; i < count; i++) {
-    const angle = Math.PI / 2 + (Math.random() - 0.5) * 0.9;
+    const startX = boss.x + (Math.random() - 0.5) * 100;
+    const startY = boss.y;
+    const angle = Math.atan2(player.y - startY, player.x - startX) + (Math.random() - 0.5) * 0.28;
     bullets.push({
-      x: boss.x + (Math.random() - 0.5) * 100,
-      y: boss.y,
-      vx: Math.cos(angle) * 82,
-      vy: Math.sin(angle) * 105,
+      x: startX,
+      y: startY,
+      vx: Math.cos(angle) * 135,
+      vy: Math.sin(angle) * 135,
       radius: 8,
       color: '#ff7a1a',
+      imageType: 'firework',
       splitTime: 1.15 + Math.random() * 0.35,
       splitY: boss.y + 270 + Math.random() * 110,
       splitCount: 3 + Math.floor(info.stage * 1.1) + (info.isBoss ? 1 : 0),
@@ -703,6 +706,7 @@ function createBullet(angle, speed) {
     vy: Math.sin(angle) * speed,
     radius: 7,
     color: '#ffd166',
+    imageType: 'basic',
   });
 }
 
@@ -814,6 +818,7 @@ function updateBullets(dt) {
             vy: Math.sin(angle) * (bulletSpeed * 0.45),
             radius: 5,
             color: '#ff3d00',
+            imageType: bullet.imageType || 'firework',
           });
         }
         bullet.remove = true;
@@ -1286,12 +1291,13 @@ function drawPlayer() {
 
 function drawBullets() {
   bullets.forEach((bullet) => {
-    const bulletImage = bullet.splitTime ? gameImages.bulletFirework : gameImages.bulletBasic;
+    const isFireworkBullet = bullet.imageType === 'firework' || bullet.splitTime !== undefined;
+    const bulletImage = isFireworkBullet ? gameImages.bulletFirework : gameImages.bulletBasic;
     if (isImageReady(bulletImage)) {
-      const size = bullet.radius * (bullet.splitTime ? 2.9 : 2.7);
+      const size = bullet.radius * (isFireworkBullet ? 3.15 : 3.55);
       ctx.save();
       ctx.translate(bullet.x, bullet.y);
-      ctx.rotate(Math.atan2(bullet.vy, bullet.vx) + performance.now() / 260);
+      ctx.rotate(Math.atan2(bullet.vy, bullet.vx));
       ctx.drawImage(bulletImage, -size / 2, -size / 2, size, size);
       ctx.restore();
       return;
@@ -1329,7 +1335,7 @@ function drawStars() {
     ctx.rotate(star.pulse * 0.18);
 
     if (isImageReady(gameImages.star)) {
-      const size = r * 2.55;
+      const size = r * 3.15;
       ctx.drawImage(gameImages.star, -size / 2, -size / 2, size, size);
       ctx.restore();
       return;

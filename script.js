@@ -21,6 +21,7 @@ const upgradePanel = document.getElementById('upgradePanel');
 const gameOverPanel = document.getElementById('gameOverPanel');
 const startButton = document.getElementById('startButton');
 const restartButton = document.getElementById('restartButton');
+const progressButton = document.getElementById('progressButton');
 const soundButton = document.getElementById('soundButton');
 const upgradeCards = document.getElementById('upgradeCards');
 const resultTitle = document.getElementById('resultTitle');
@@ -62,6 +63,7 @@ let selectedMode = { label: '무한모드', startWave: 1, endWave: null, infinit
 let currentRunEndWave = null;
 let currentRunIsInfinite = true;
 let currentRunLabel = '무한모드';
+let progressTargetMode = null;
 
 const imageSources = {
   background: 'images/BG.png',
@@ -1333,6 +1335,58 @@ function updateHud() {
   }
 }
 
+function getModeByStage(stage) {
+  const startWave = (stage - 1) * 4 + 1;
+  const button = [...modeButtons].find((item) => (
+    item.dataset.infinite !== 'true' && Number(item.dataset.start) === startWave
+  ));
+
+  return button ? getModeFromButton(button) : null;
+}
+
+function getInfiniteMode() {
+  const button = [...modeButtons].find((item) => item.dataset.infinite === 'true');
+  return button ? getModeFromButton(button) : null;
+}
+
+function setActiveModeButton(mode) {
+  modeButtons.forEach((button) => {
+    const buttonMode = getModeFromButton(button);
+    const isActive = buttonMode.infinite === mode.infinite
+      && buttonMode.startWave === mode.startWave
+      && buttonMode.endWave === mode.endWave;
+    button.classList.toggle('active', isActive);
+  });
+}
+
+function updateResultActions(isWin) {
+  progressTargetMode = null;
+
+  if (restartButton) {
+    restartButton.textContent = '다시하기';
+  }
+
+  if (!progressButton) return;
+
+  progressButton.classList.add('hidden');
+  progressButton.textContent = '다음단계로';
+
+  if (!isWin || currentRunIsInfinite || !currentRunEndWave) return;
+
+  const clearedStage = Math.ceil(currentRunEndWave / 4);
+  if (clearedStage >= 5) {
+    progressTargetMode = getInfiniteMode();
+    progressButton.textContent = '무한모드 도전';
+  } else {
+    progressTargetMode = getModeByStage(clearedStage + 1);
+    progressButton.textContent = '다음단계로';
+  }
+
+  if (progressTargetMode) {
+    progressButton.classList.remove('hidden');
+  }
+}
+
 function endGame(isWin) {
   gameState = 'over';
   cancelAnimationFrame(animationId);
@@ -1345,6 +1399,8 @@ function endGame(isWin) {
 
   if (isWin) playStageClearSound();
   else playStageFailSound();
+
+  updateResultActions(isWin);
 
   rankSavedThisRun = false;
   if (currentRunIsInfinite) {
@@ -1434,6 +1490,8 @@ function getModeFromButton(button) {
 
 function showLobbyForMode(mode) {
   selectedMode = mode;
+  progressTargetMode = null;
+  setActiveModeButton(mode);
   gameState = 'ready';
   cancelAnimationFrame(animationId);
   stopAmbience();
@@ -1596,6 +1654,11 @@ function handleStartClick(event) {
 
 startButton.addEventListener('click', handleStartClick);
 restartButton.addEventListener('click', () => showLobbyForMode(selectedMode));
+if (progressButton) {
+  progressButton.addEventListener('click', () => {
+    if (progressTargetMode) showLobbyForMode(progressTargetMode);
+  });
+}
 
 soundButton.addEventListener('click', () => {
   audio.enabled = !audio.enabled;

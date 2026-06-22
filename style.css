@@ -453,6 +453,17 @@ canvas {
   background: var(--deep);
 }
 
+.result-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+}
+
+.result-actions button {
+  min-width: 150px;
+}
+
 .ranking-box {
   width: min(680px, 94%);
   padding: 14px;
@@ -583,8 +594,17 @@ canvas {
     grid-template-columns: 1fr;
   }
 
-  .rank-input-row {
+  .rank-input-row,
+  .result-actions {
     flex-direction: column;
+  }
+
+  .result-actions {
+    width: min(92vw, 360px);
+  }
+
+  .result-actions button {
+    width: 100%;
   }
 
   .game-hud {

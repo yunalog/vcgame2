@@ -44,6 +44,8 @@ const PILLOW_BASE_COOLDOWN = 0.45;
 const STAR_EAT_IMAGE_TIME = 0.36;
 const PLAYER_IMAGE_MAX_WIDTH = 58;
 const PLAYER_IMAGE_MAX_HEIGHT = 58;
+const BOSS_IMAGE_MAX_WIDTH = 138;
+const BOSS_IMAGE_MAX_HEIGHT = 118;
 
 let gameState = 'ready';
 let lastTime = 0;
@@ -66,6 +68,11 @@ const imageSources = {
   basic: 'images/basic.png',
   eatStar: 'images/eatstar.png',
   sleep: 'images/sleep.png',
+  bossCloud: 'images/cloud.png',
+  bossMoon: 'images/moon.png',
+  bossOwl: 'images/owl.png',
+  bossWolf: 'images/wolf.png',
+  bossBlood: 'images/blood.png',
 };
 
 const gameImages = Object.entries(imageSources).reduce((images, [name, src]) => {
@@ -1047,6 +1054,18 @@ function drawContainedImage(image, centerX, centerY, maxWidth, maxHeight) {
   return true;
 }
 
+function getBossImage(stage) {
+  const bossImages = [
+    gameImages.bossCloud,
+    gameImages.bossMoon,
+    gameImages.bossOwl,
+    gameImages.bossWolf,
+    gameImages.bossBlood,
+  ];
+
+  return bossImages[stage - 1] || null;
+}
+
 function drawBoss() {
   const x = boss.x;
   const y = boss.y;
@@ -1058,11 +1077,14 @@ function drawBoss() {
   ctx.arc(x, y + 8, 70 + pulse + info.stage * 2, 0, Math.PI * 2);
   ctx.fill();
 
-  if (info.stage === 1) drawCloudBoss(x, y);
-  else if (info.stage === 2) drawMoonBoss(x, y);
-  else if (info.stage === 3) drawOwlBoss(x, y);
-  else if (info.stage === 4) drawWerewolfBoss(x, y);
-  else drawVampireBoss(x, y);
+  const bossImage = getBossImage(info.stage);
+  if (!drawContainedImage(bossImage, x, y, BOSS_IMAGE_MAX_WIDTH, BOSS_IMAGE_MAX_HEIGHT)) {
+    if (info.stage === 1) drawCloudBoss(x, y);
+    else if (info.stage === 2) drawMoonBoss(x, y);
+    else if (info.stage === 3) drawOwlBoss(x, y);
+    else if (info.stage === 4) drawWerewolfBoss(x, y);
+    else drawVampireBoss(x, y);
+  }
 
   ctx.fillStyle = info.color;
   ctx.font = 'bold 18px monospace';
